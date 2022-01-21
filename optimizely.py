@@ -22,6 +22,8 @@ import time
 import datetime
 from openpyxl import load_workbook
 import sys
+from urllib.parse import urlparse
+from lxml import html
 #Token required for authentication
 token='TOEKN HERE BETWEEN THE QUOTES (KEEP THE QUOTES)'
 token='2:144e9gwG13pKp-jspUGgospelGm7CkfX7GdIWqFZ4rpze89_iytQ'
