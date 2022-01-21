@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jan  5 10:29:53 2022
-Updated 21/01/2022 14:29
  
 @author: Guillaume Lombard
 """
@@ -23,10 +22,9 @@ import time
 import datetime
 from openpyxl import load_workbook
 import sys
-from urllib.parse import urlparse
-from lxml import html
 #Token required for authentication
 token='TOEKN HERE BETWEEN THE QUOTES (KEEP THE QUOTES)'
+token='2:144e9gwG13pKp-jspUGgospelGm7CkfX7GdIWqFZ4rpze89_iytQ'
 headers = {'Authorization': 'Bearer {}'.format(token)}
 #create a dataframe that can de downloaded as a template
 template=pd.DataFrame({'Audience name' : ["compulsory, this needs to match audience in optimizely"],
@@ -278,10 +276,11 @@ def list_experiments(project_id,headers,Campaign_id):
 def prioritisation():
     QA_df=list_experiments(project_id,headers,Campaign_id)
     QA_df=QA_df[QA_df['Experiment status']!='archived']
-     
-    Priorities_df=pd.merge(df[['Experiment Name', 'AEM image']].astype(str), QA_df[['Experiment Name', 'AEM image','Experiment ID']].astype(str), left_on=  ['Experiment Name', 'AEM image'], right_on= ['Experiment Name', 'AEM image'], how = 'left', suffixes=('', '_DROP')).filter(regex='^(?!.*_DROP)')
+    QA_df=QA_df.sort_values(by='Created', ascending=True).reset_index(drop=True) 
+    Priorities_df=pd.merge(df[['Experiment Name', 'AEM image']].astype(str), QA_df[['Campaign id','Experiment Name', 'AEM image','Experiment ID']].astype(str), left_on=  ['Experiment Name', 'AEM image'], right_on= ['Experiment Name', 'AEM image'], how = 'left', suffixes=('', '_DROP')).filter(regex='^(?!.*_DROP)')
     Priorities_df['id']=QA_df['Experiment ID'].astype(str)
- 
+    Priorities_df['Match']= Priorities_df['id']==Priorities_df['Experiment ID']
+    
     lists = []
     # make list of lists
     for i in (Priorities_df['Experiment ID']):
@@ -295,7 +294,6 @@ def prioritisation():
     r = requests.patch(url, data=json.dumps(update_priorities), headers=headers)
     return(print(r.json()))   
 #Prioritise banners  
-    
 #the below performs QA
 def QA(Campaign_id): 
     global df
@@ -403,8 +401,8 @@ def QA(Campaign_id):
 def list_projects():
     params = {
     "per_page": 100
-    } 
-    
+    }
+     
     url="https://api.optimizely.com/v2/projects"
     r = requests.get(url, params=params, headers=headers)
     Projects=[]
@@ -416,11 +414,12 @@ def list_projects():
            'id': P["id"],
            'description': P["description"]
         })
-    
+     
     Project_List=pd.DataFrame(Project_List)
     return(Project_List)
+ 
 
-
+ 
     
 ##List Campaigns
 def List_campaigns(project_id):
@@ -784,6 +783,7 @@ def duplicate_experiments():
      
     return(dup)
  
+Project_List=list_projects()      
 Menu_selection=[]
 #sorted(Campaigns_List["name"])
 Menu_selection=choicebox("Select the campaign you want to work on"  , "Optimizely Uploader", sorted(["Download experiment details","Update experiments - can only add new ones and prioritise","Continue Upload","New Campaign","Download template","QA","Check AEM link"]))
@@ -849,11 +849,8 @@ elif Menu_selection == "Download template":
     project_id=[]
     project_id=Project_List.loc[Project_List['name']==choicebox("Select the project you want to work on.Warning if duplicate name exist, only first in the list willbe selected"  , "Optimizely Uploader", sorted(Project_List["name"]) ) ,'id'].item()
     project_name=Project_List[Project_List['id']==project_id]['name'].tolist()[0]
-     
-    ##List projects
-    #List audience
     Audience_List=list_audiences(project_id,headers)       
-    ###List Audience
+    Pages_List=list_pages(project_id,headers)
     Campaigns_List=List_campaigns(project_id)
     Campaigns_List=Campaigns_List.sort_values(by='created', ascending=False)
     Extensions_List=list_extensions() 
@@ -864,8 +861,9 @@ elif Menu_selection == "Download template":
     Audience_List.to_excel(writer,sheet_name="Audience in Optimizely", index=False, header=True,startrow=0, columns=Audience_List.columns)
     Campaigns_List.to_excel(writer,sheet_name="Campaigns in Optimizely", index=False, header=True,startrow=0, columns=Campaigns_List.columns)
     Extensions_List.to_excel(writer,sheet_name="Exensions in Optimizely", index=False, header=True,startrow=0, columns=Extensions_List.columns)
+    Pages_List.to_excel(writer,sheet_name="Pages in Optimizely", index=False, header=True,startrow=0, columns=Pages_List.columns)
     writer.close()
-    msgbox("outcome written n original file:" + files, "File ready", "OK")
+    msgbox("Template can be found under:" + os.path.join(directory,project_name+"_Optimizely_template.xlsx"), "File ready", "OK")
  
 elif Menu_selection =="QA":
     df,files=openExcel()
@@ -927,6 +925,7 @@ elif Menu_selection =="Check AEM link":
     df=df.replace('<NA>', '')
     df.to_excel(writer,sheet_name="Links checked", index=False, header=True,startrow=0, columns=df.columns)
     writer.close()
+ 
  
 elif Menu_selection =="Continue Upload":
     #GUI to select project/project id
