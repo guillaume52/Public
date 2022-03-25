@@ -233,8 +233,10 @@ let collectData = function(){
 			if (dimensions_array_columns[4] == null){"empty" } else{fourth=dimensions_array_columns[4]};
 			if (dimensions_array_columns[5] == null){"empty" } else{fifth=dimensions_array_columns[5]};
 			segment=iframe.querySelectorAll(segment)[0].innerText;
-			sessions=conversions=sessions_conversions_col.querySelectorAll('[class*="COLUMN-analytics"]')[parseInt(Sessions_selection)].innerText.split(" (")[0].replace(",","");
+			sessions=sessions_conversions_col.querySelectorAll('[class*="COLUMN-analytics"]')[parseInt(Sessions_selection)].innerText.split(" (")[0].replace(",","");
+			sessions=parseInt(sessions.replace(/,/g, ''), 10)
 			conversions=sessions_conversions_col.querySelectorAll('[class*="COLUMN-analytics"]')[parseInt(Conversions_selection)].innerText.split(" (")[0].replace(",","");
+			conversions=parseInt(conversions.replace(/,/g, ''), 10)
 			total_array.push(new Dimensions(Label,first,second,third, fourth,fifth,segment,sessions,conversions));
 
 
